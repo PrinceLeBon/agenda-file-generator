@@ -181,11 +181,26 @@ function parseIcsBuffer(buffer) {
         events.push(buildEvent(item, occUtc, occEnd, `${key}_occ${i}`, occRaw));
       });
     } else {
-      // ── One-off event ─────────────────────────────────────────────────────
-      const localStart = toLocal(utcStart);
-      if (!isInMay(localStart)) continue;
+      // ── One-off event (including multi-day all-day events) ────────────────
+      const isAllDay = detectAllDay(item.start);
 
-      events.push(buildEvent(item, utcStart, utcEnd, key));
+      if (isAllDay && utcEnd && durationMs >= 86400000 * 2) {
+        // Multi-day all-day event: DTEND is exclusive in ICS.
+        // Create one entry per day covered so each day appears on the calendar.
+        const MS_PER_DAY = 86400000;
+        const totalDays  = Math.round(durationMs / MS_PER_DAY);
+
+        for (let d = 0; d < totalDays; d++) {
+          const dayStart = new Date(utcStart.getTime() + d * MS_PER_DAY);
+          const localDay = toLocal(dayStart);
+          if (!isInMay(localDay)) continue;
+          events.push(buildEvent(item, dayStart, utcEnd, `${key}_day${d}`));
+        }
+      } else {
+        const localStart = toLocal(utcStart);
+        if (!isInMay(localStart)) continue;
+        events.push(buildEvent(item, utcStart, utcEnd, key));
+      }
     }
   }
 
