@@ -1,8 +1,8 @@
 'use strict';
 
 const ical = require('node-ical');
-const { parseISO, format, getDate, getMonth, getYear, isValid, differenceInMilliseconds } = require('date-fns');
-const { utcToZonedTime } = require('date-fns-tz');
+const { parseISO, getDate, getMonth, getYear, isValid, differenceInMilliseconds } = require('date-fns');
+const { utcToZonedTime, formatInTimeZone } = require('date-fns-tz');
 
 const TARGET_MONTH = 4; // May = index 4 (0-based)
 const TARGET_YEAR  = 2026;
@@ -44,6 +44,31 @@ function isInMay(localDate) {
 }
 
 /**
+ * Strip Google Meet boilerplate and other noise from event descriptions.
+ * Removes: ~:~ separator lines, Meet links, support links, "do not edit" notices.
+ */
+function cleanDescription(raw) {
+  if (!raw) return '';
+
+  return raw
+    // Remove the -::~:~:...:~::- separator blocks (Google Meet artifact)
+    .replace(/-::~:~[:\~]*-?/g, '')
+    // Remove Google Meet join lines
+    .replace(/Join with Google Meet:.*$/gim, '')
+    // Remove Meet/support URLs
+    .replace(/https?:\/\/(meet\.google\.com|support\.google\.com)[^\s]*/gi, '')
+    // Remove "Learn more about Meet" lines
+    .replace(/Learn more about Meet at:.*$/gim, '')
+    // Remove "Please do not edit" lines
+    .replace(/Please do not edit this section\.?/gi, '')
+    // Remove lines that are only punctuation/dashes
+    .replace(/^[\s\-_=:~]+$/gm, '')
+    // Collapse multiple blank lines into one
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
  * Detect all-day events.
  */
 function detectAllDay(rawStart) {
@@ -67,24 +92,23 @@ function categorize(title = '') {
  * Build a serialisable event object from a resolved local start date.
  */
 function buildEvent(item, utcStart, utcEnd, uid) {
-  const localStart = toLocal(utcStart);
-  const localEnd   = utcEnd ? toLocal(utcEnd) : null;
-
+  // Use formatInTimeZone for all formatting — immune to Docker/system timezone
   const isAllDay = detectAllDay(item.start);
   let timeStr = '';
   if (!isAllDay) {
-    timeStr = format(localStart, 'HH:mm');
-    if (localEnd) timeStr += ' – ' + format(localEnd, 'HH:mm');
+    timeStr = formatInTimeZone(utcStart, DEFAULT_TZ, 'HH:mm');
+    if (utcEnd) timeStr += ' – ' + formatInTimeZone(utcEnd, DEFAULT_TZ, 'HH:mm');
   }
 
-  const title       = (item.summary     || 'Sans titre').trim();
-  const description = (item.description || '').trim();
-  const location    = (item.location    || '').trim();
+  const localStart = toLocal(utcStart); // only used for dateKey / dayNum
+  const title       = (item.summary  || 'Sans titre').trim();
+  const description = cleanDescription(item.description);
+  const location    = (item.location || '').trim();
   const { category, color } = categorize(title);
 
   return {
     id:          uid,
-    dateKey:     format(localStart, 'yyyy-MM-dd'),
+    dateKey:     formatInTimeZone(utcStart, DEFAULT_TZ, 'yyyy-MM-dd'),
     dayNum:      getDate(localStart),
     title,
     description,
