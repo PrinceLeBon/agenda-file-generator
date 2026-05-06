@@ -280,89 +280,132 @@ export default function CalendarPreview() {
         </span>
       </div>
 
-      {/* Detailed event list (collapsible-like scrollable table) */}
-      {allEvents.length > 0 && (
-        <div className="mt-5 bg-white rounded-2xl border border-gray-200 shadow-card overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
-            <h3 className="font-semibold text-gray-900 text-sm">
-              Détail des événements
-            </h3>
-            <span className="text-xs font-medium text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
-              {meta.totalEvents}
-            </span>
+      {/* Detailed event list — grouped by day (timeline) */}
+      {allEvents.length > 0 && (() => {
+        const DAY_NAMES = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        const DAY_NAMES_FULL = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+        // Group events by dayNum
+        const byDay: Record<number, CalendarEvent[]> = {};
+        for (const evt of allEvents) {
+          if (!byDay[evt.dayNum]) byDay[evt.dayNum] = [];
+          byDay[evt.dayNum].push(evt);
+        }
+        const days = Object.keys(byDay).map(Number).sort((a, b) => a - b);
+
+        // Week number helper (May 1 = Fri = col 5)
+        const weekOf = (d: number) => Math.ceil((MAY_2026_FIRST_WEEKDAY + d) / 7);
+
+        // Group days into weeks
+        const weeks: Record<number, number[]> = {};
+        for (const d of days) {
+          const w = weekOf(d);
+          if (!weeks[w]) weeks[w] = [];
+          weeks[w].push(d);
+        }
+
+        return (
+          <div className="mt-5 space-y-6">
+            {/* Section header */}
+            <div className="flex items-center gap-3">
+              <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wide">
+                Détail des événements
+              </h3>
+              <span className="text-xs font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full">
+                {meta.totalEvents} événements
+              </span>
+            </div>
+
+            {Object.entries(weeks).map(([weekNum, weekDays]) => (
+              <div key={weekNum}>
+                {/* Week label */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-px flex-1 bg-gray-200" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-2">
+                    Semaine {weekNum}
+                  </span>
+                  <div className="h-px flex-1 bg-gray-200" />
+                </div>
+
+                {/* Days in this week */}
+                <div className="space-y-3">
+                  {weekDays.map((dayNum) => {
+                    const dow = (MAY_2026_FIRST_WEEKDAY + dayNum - 1) % 7;
+                    const isWeekend = dow === 0 || dow === 6;
+                    const isToday = dayNum === 6;
+                    const eventsOfDay = byDay[dayNum];
+
+                    return (
+                      <div key={dayNum} className="flex gap-3">
+                        {/* Day badge */}
+                        <div className="flex-shrink-0 w-16 pt-0.5">
+                          <div className={`
+                            rounded-xl text-center py-1.5 px-1
+                            ${isToday
+                              ? 'bg-orange-500 text-white'
+                              : isWeekend
+                              ? 'bg-red-50 border border-red-100'
+                              : 'bg-gray-50 border border-gray-200'
+                            }
+                          `}>
+                            <div className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? 'text-orange-100' : isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                              {DAY_NAMES[dow]}
+                            </div>
+                            <div className={`text-xl font-extrabold leading-tight ${isToday ? 'text-white' : isWeekend ? 'text-red-500' : 'text-gray-800'}`}>
+                              {String(dayNum).padStart(2, '0')}
+                            </div>
+                            <div className={`text-[9px] ${isToday ? 'text-orange-100' : 'text-gray-400'}`}>
+                              mai
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Events for this day */}
+                        <div className="flex-1 space-y-1.5">
+                          {eventsOfDay.map((evt) => {
+                            const style = getCategory(evt.category);
+                            return (
+                              <div
+                                key={evt.id}
+                                className={`
+                                  flex items-start gap-2.5 rounded-xl px-3 py-2
+                                  border-l-4 ${style.border} ${style.bg}
+                                `}
+                              >
+                                {/* Time */}
+                                <div className="flex-shrink-0 w-20 pt-px">
+                                  <span className={`text-[11px] font-semibold tabular-nums ${style.time}`}>
+                                    {evt.timeStr || 'Journée'}
+                                  </span>
+                                </div>
+                                {/* Content */}
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-xs font-semibold leading-tight ${style.title}`}>
+                                    {evt.title}
+                                  </p>
+                                  {evt.description && (
+                                    <p className="text-[10px] text-gray-500 mt-0.5 leading-snug line-clamp-1">
+                                      {evt.description}
+                                    </p>
+                                  )}
+                                </div>
+                                {/* Category badge */}
+                                <span className={`flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${style.bg} ${style.title} border ${style.border} opacity-80`}>
+                                  {evt.category}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left text-[10px] font-bold uppercase tracking-wide text-gray-500 px-4 py-2.5">
-                    Date
-                  </th>
-                  <th className="text-left text-[10px] font-bold uppercase tracking-wide text-gray-500 px-4 py-2.5">
-                    Catégorie
-                  </th>
-                  <th className="text-left text-[10px] font-bold uppercase tracking-wide text-gray-500 px-4 py-2.5">
-                    Titre
-                  </th>
-                  <th className="text-left text-[10px] font-bold uppercase tracking-wide text-gray-500 px-4 py-2.5">
-                    Horaire
-                  </th>
-                  <th className="text-left text-[10px] font-bold uppercase tracking-wide text-gray-500 px-4 py-2.5">
-                    Description
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {allEvents.map((evt, idx) => {
-                  const style = getCategory(evt.category);
-                  const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-                  const dow = (MAY_2026_FIRST_WEEKDAY + evt.dayNum - 1) % 7;
-                  return (
-                    <tr
-                      key={evt.id}
-                      className={`border-b border-gray-50 hover:bg-gray-50/70 transition-colors ${
-                        idx % 2 === 0 ? '' : 'bg-gray-50/30'
-                      }`}
-                    >
-                      <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className="text-xs font-semibold text-gray-800">
-                          {dayNames[dow]} {String(evt.dayNum).padStart(2, '0')} mai
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span
-                          className={`
-                            inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                            text-[10px] font-semibold
-                            ${style.bg} ${style.title}
-                          `}
-                        >
-                          {evt.category}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span className="text-xs font-medium text-gray-800">
-                          {evt.title}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className="text-xs text-gray-500">
-                          {evt.timeStr || 'Journée entière'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 max-w-xs">
-                        <span className="text-xs text-gray-400 truncate block max-w-[200px]">
-                          {evt.description || '—'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

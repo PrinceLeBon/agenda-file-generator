@@ -2,6 +2,16 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  // Enable file watching inside Docker volumes
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;

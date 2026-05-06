@@ -34,7 +34,32 @@ Une application fullstack permettant de générer un agenda mensuel professionne
 
 ---
 
-## Installation et démarrage en développement local
+## Développement avec hot reload (Docker)
+
+La méthode recommandée — **aucun rebuild nécessaire**, les modifications sont prises en compte instantanément.
+
+```bash
+docker compose up
+```
+
+- Frontend : [http://localhost:3000](http://localhost:3000) — hot reload Next.js
+- Backend  : [http://localhost:3001](http://localhost:3001) — hot reload nodemon
+
+> Modifiez n'importe quel fichier dans `frontend/` ou `backend/` : le changement s'applique automatiquement, comme Vue.js ou Flutter.
+
+---
+
+## Production Docker
+
+```bash
+docker compose -f docker-compose.prod.yml up --build
+```
+
+> À utiliser uniquement pour un déploiement final. Nécessite un rebuild à chaque modification.
+
+---
+
+## Sans Docker (développement local)
 
 ### 1. Backend
 
@@ -50,30 +75,6 @@ npm run dev       # Démarre sur http://localhost:3001
 cd frontend
 npm install
 npm run dev       # Démarre sur http://localhost:3000
-```
-
-Ouvrez [http://localhost:3000](http://localhost:3000) dans votre navigateur.
-
-> **Note** : Le frontend proxifie automatiquement `/api/*` vers `http://localhost:3001/api/*` via `next.config.js`.
-
----
-
-## Déploiement Docker
-
-### Build et lancement
-
-```bash
-# Depuis la racine du projet
-docker compose up --build
-```
-
-- Frontend : [http://localhost:3000](http://localhost:3000)
-- Backend  : [http://localhost:3001](http://localhost:3001)
-
-### Arrêt
-
-```bash
-docker compose down
 ```
 
 ### Logs

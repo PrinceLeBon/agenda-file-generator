@@ -359,101 +359,178 @@
     .legend-dot.staff { background: var(--color-staff); }
     .legend-dot.ejp { background: var(--color-ejp); }
 
-    /* ─── EVENTS DETAIL LIST ─── */
+    /* ─── EVENTS DETAIL LIST (timeline by day) ─── */
     .detail-section {
-      background: var(--color-card);
-      border-radius: var(--radius);
-      border: 1px solid var(--color-border);
-      box-shadow: var(--shadow-md);
-      overflow: hidden;
+      background: var(--color-bg);
     }
 
-    .detail-header {
-      background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
-      border-bottom: 1px solid var(--color-border);
-      padding: 12px 20px;
+    .detail-section-header {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
-    .detail-header-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--color-text);
-    }
-
-    .detail-header-count {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--color-text-muted);
-      background: #E5E7EB;
-      padding: 2px 8px;
-      border-radius: 20px;
-    }
-
-    .detail-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .detail-table thead tr {
-      background: #F9FAFB;
-    }
-
-    .detail-table th {
-      padding: 8px 14px;
-      text-align: left;
-      font-size: 10px;
+    .detail-section-title {
+      font-size: 13px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--color-text-muted);
-      border-bottom: 1px solid var(--color-border);
     }
 
-    .detail-table td {
-      padding: 9px 14px;
-      border-bottom: 1px solid #F3F4F6;
-      vertical-align: middle;
-    }
-
-    .detail-table tr:last-child td { border-bottom: none; }
-    .detail-table tbody tr:hover { background: #FAFAFA; }
-
-    .detail-cat-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 8px;
+    .detail-section-count {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      background: #E5E7EB;
+      border: 1px solid #D1D5DB;
+      padding: 2px 8px;
       border-radius: 20px;
+    }
+
+    /* Week separator */
+    .week-block { margin-bottom: 20px; }
+
+    .week-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .week-label-line { flex: 1; height: 1px; background: var(--color-border); }
+
+    .week-label-text {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #9CA3AF;
+      white-space: nowrap;
+    }
+
+    /* Day row */
+    .day-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    /* Day badge */
+    .day-badge {
+      flex-shrink: 0;
+      width: 52px;
+      background: #F9FAFB;
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      text-align: center;
+      padding: 6px 4px;
+    }
+
+    .day-badge.weekend { background: #FEF2F2; border-color: #FECACA; }
+    .day-badge.today   { background: #F97316; border-color: #F97316; }
+
+    .day-badge-name {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9CA3AF;
+      display: block;
+    }
+
+    .day-badge.weekend .day-badge-name { color: #F87171; }
+    .day-badge.today   .day-badge-name { color: rgba(255,255,255,0.8); }
+
+    .day-badge-num {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--color-text);
+      display: block;
+    }
+
+    .day-badge.weekend .day-badge-num { color: #EF4444; }
+    .day-badge.today   .day-badge-num { color: #FFFFFF; }
+
+    .day-badge-month {
+      font-size: 8px;
+      color: #9CA3AF;
+      display: block;
+    }
+
+    .day-badge.today .day-badge-month { color: rgba(255,255,255,0.7); }
+
+    /* Event cards in timeline */
+    .day-events { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+
+    .tl-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      border-left: 3px solid;
+      border-radius: 8px;
+      padding: 5px 8px;
+    }
+
+    .tl-card.cat-mpi   { border-left-color: var(--color-mpi);   background: var(--color-mpi-light); }
+    .tl-card.cat-staff { border-left-color: var(--color-staff); background: var(--color-staff-light); }
+    .tl-card.cat-ejp   { border-left-color: var(--color-ejp);   background: var(--color-ejp-light); }
+
+    .tl-time {
+      flex-shrink: 0;
+      width: 72px;
       font-size: 10px;
       font-weight: 600;
+      padding-top: 1px;
+      font-variant-numeric: tabular-nums;
     }
 
-    .detail-cat-badge.mpi { background: var(--color-mpi-light); color: #1D4ED8; }
-    .detail-cat-badge.staff { background: var(--color-staff-light); color: #15803D; }
-    .detail-cat-badge.ejp { background: var(--color-ejp-light); color: #6D28D9; }
+    .tl-card.cat-mpi   .tl-time { color: #1D4ED8; }
+    .tl-card.cat-staff .tl-time { color: #15803D; }
+    .tl-card.cat-ejp   .tl-time { color: #6D28D9; }
 
-    .detail-date {
-      font-weight: 600;
-      font-size: 12px;
-      color: var(--color-text);
-      white-space: nowrap;
-    }
+    .tl-body { flex: 1; min-width: 0; }
 
-    .detail-title-text {
-      font-weight: 500;
-      font-size: 12px;
-      color: var(--color-text);
-    }
-
-    .detail-time-text {
+    .tl-title {
       font-size: 11px;
-      color: var(--color-text-muted);
+      font-weight: 600;
+      display: block;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
+    .tl-card.cat-mpi   .tl-title { color: #1E40AF; }
+    .tl-card.cat-staff .tl-title { color: #166534; }
+    .tl-card.cat-ejp   .tl-title { color: #5B21B6; }
+
+    .tl-desc {
+      font-size: 9px;
+      color: var(--color-text-muted);
+      display: block;
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tl-cat {
+      flex-shrink: 0;
+      font-size: 8px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 10px;
+      align-self: flex-start;
+      margin-top: 1px;
+    }
+
+    .tl-card.cat-mpi   .tl-cat { background: rgba(37,99,235,0.15); color: #1D4ED8; }
+    .tl-card.cat-staff .tl-cat { background: rgba(22,163,74,0.15);  color: #15803D; }
+    .tl-card.cat-ejp   .tl-cat { background: rgba(124,58,237,0.15); color: #6D28D9; }
+
+    /* keep old no-events style */
     .detail-desc-text {
       font-size: 11px;
       color: var(--color-text-muted);
@@ -595,12 +672,8 @@
       </div>
     </div>
 
-    <!-- ── Detailed Events List ── -->
+    <!-- ── Detailed Events List (timeline by day) ── -->
     <div class="detail-section">
-      <div class="detail-header">
-        <span class="detail-header-title">Détail des événements</span>
-        <span class="detail-header-count"><%= meta.totalEvents %> événement<%= meta.totalEvents !== 1 ? 's' : '' %></span>
-      </div>
 
       <% if (allEventsList.length === 0) { %>
         <div class="no-events">
@@ -608,50 +681,82 @@
           Aucun événement trouvé pour Mai 2026 dans ce fichier ICS.
         </div>
       <% } else { %>
-        <table class="detail-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Catégorie</th>
-              <th>Titre</th>
-              <th>Horaire</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% allEventsList.forEach(function(evt) { %>
+        <%
+          const dayNames     = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+          const MAY1_WEEKDAY = 5; // May 1 2026 = Friday (0=Sun)
+
+          // Group events by day
+          const byDayMap = {};
+          allEventsList.forEach(function(evt) {
+            const d = evt.day || evt.dayNum;
+            if (!byDayMap[d]) byDayMap[d] = [];
+            byDayMap[d].push(evt);
+          });
+          const sortedDays = Object.keys(byDayMap).map(Number).sort(function(a,b){ return a-b; });
+
+          // Group days into weeks
+          const weekMap = {};
+          sortedDays.forEach(function(d) {
+            const w = Math.ceil((MAY1_WEEKDAY + d) / 7);
+            if (!weekMap[w]) weekMap[w] = [];
+            weekMap[w].push(d);
+          });
+          const weekNums = Object.keys(weekMap).map(Number).sort(function(a,b){ return a-b; });
+        %>
+
+        <div class="detail-section-header">
+          <span class="detail-section-title">Détail des événements</span>
+          <span class="detail-section-count"><%= meta.totalEvents %> événement<%= meta.totalEvents !== 1 ? 's' : '' %></span>
+        </div>
+
+        <% weekNums.forEach(function(wn) { %>
+          <div class="week-block">
+            <!-- Week label -->
+            <div class="week-label">
+              <div class="week-label-line"></div>
+              <span class="week-label-text">Semaine <%= wn %></span>
+              <div class="week-label-line"></div>
+            </div>
+
+            <!-- Days -->
+            <% weekMap[wn].forEach(function(dayNum) { %>
               <%
-                const catClass = evt.category.toLowerCase();
-                const dayNames = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-                // Compute weekday for this day of May 2026
-                // May 1 = Friday = index 5 (0=Sun)
-                const dow = (5 + evt.day - 1) % 7;
-                const dayLabel = dayNames[dow];
+                const dow      = (MAY1_WEEKDAY + dayNum - 1) % 7;
+                const isWeekend = dow === 0 || dow === 6;
+                const isToday   = dayNum === 6;
+                const badgeClass = 'day-badge' + (isToday ? ' today' : isWeekend ? ' weekend' : '');
               %>
-              <tr>
-                <td>
-                  <span class="detail-date">
-                    <%= dayLabel %> <%= String(evt.day).padStart(2,'0') %> mai 2026
-                  </span>
-                </td>
-                <td>
-                  <span class="detail-cat-badge <%= catClass %>"><%= evt.category %></span>
-                </td>
-                <td>
-                  <span class="detail-title-text"><%= evt.title %></span>
-                </td>
-                <td>
-                  <span class="detail-time-text">
-                    <% if (evt.timeStr) { %><%= evt.timeStr %><% } else { %>Journée entière<% } %>
-                  </span>
-                </td>
-                <td>
-                  <span class="detail-desc-text"><%= evt.description || '—' %></span>
-                </td>
-              </tr>
+              <div class="day-row">
+                <!-- Day badge -->
+                <div class="<%= badgeClass %>">
+                  <span class="day-badge-name"><%= dayNames[dow] %></span>
+                  <span class="day-badge-num"><%= String(dayNum).padStart(2,'0') %></span>
+                  <span class="day-badge-month">mai</span>
+                </div>
+
+                <!-- Event cards -->
+                <div class="day-events">
+                  <% byDayMap[dayNum].forEach(function(evt) { %>
+                    <%
+                      const cat = (evt.category || 'EJP').toLowerCase();
+                      const timeLabel = evt.timeStr || 'Journée';
+                    %>
+                    <div class="tl-card cat-<%= cat %>">
+                      <span class="tl-time"><%= timeLabel %></span>
+                      <div class="tl-body">
+                        <span class="tl-title"><%= evt.title %></span>
+                        <% if (evt.description) { %>
+                          <span class="tl-desc"><%= evt.description %></span>
+                        <% } %>
+                      </div>
+                      <span class="tl-cat"><%= evt.category %></span>
+                    </div>
+                  <% }); %>
+                </div>
+              </div>
             <% }); %>
-          </tbody>
-        </table>
+          </div>
+        <% }); %>
       <% } %>
     </div>
 
