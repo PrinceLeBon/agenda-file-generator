@@ -2,7 +2,7 @@
 
 const ical = require('node-ical');
 const { parseISO, getDate, getMonth, getYear, isValid, differenceInMilliseconds } = require('date-fns');
-const { utcToZonedTime, formatInTimeZone } = require('date-fns-tz');
+const { utcToZonedTime, formatInTimeZone, getTimezoneOffset } = require('date-fns-tz');
 
 const TARGET_MONTH = 4; // May = index 4 (0-based)
 const TARGET_YEAR  = 2026;
@@ -148,9 +148,18 @@ function parseIcsBuffer(buffer) {
 
     if (item.rrule) {
       // ── Recurring event: expand all occurrences within May 2026 ──────────
+      // node-ical stores DTSTART as correct UTC in item.start, but the rrule
+      // object internally treats it as local time and re-converts to UTC when
+      // expanding, causing a double-offset shift. Correct by re-adding the
+      // event timezone offset to each returned occurrence.
+      const eventTz   = (item.start && item.start.tz) ? item.start.tz : null;
       const occurrences = item.rrule.between(MAY_START_UTC, MAY_END_UTC, true);
 
-      occurrences.forEach((occUtc, i) => {
+      occurrences.forEach((occRaw, i) => {
+        const occUtc = eventTz
+          ? new Date(occRaw.getTime() + getTimezoneOffset(eventTz, occRaw))
+          : occRaw;
+
         const localOcc = toLocal(occUtc);
         if (!isInMay(localOcc)) return;
 
