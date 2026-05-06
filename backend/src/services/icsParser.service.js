@@ -8,9 +8,10 @@ const TARGET_MONTH = 4; // May = index 4 (0-based)
 const TARGET_YEAR  = 2026;
 const DEFAULT_TZ   = 'Africa/Porto-Novo'; // UTC+1, Cotonou
 
-// Boundaries for RRULE expansion (UTC)
-const MAY_START_UTC = new Date('2026-05-01T00:00:00Z');
-const MAY_END_UTC   = new Date('2026-05-31T23:59:59Z');
+// Wider search window for rrule expansion — ensures midnight events that cross
+// UTC day boundaries are captured. isInMay() does the precise filtering.
+const RRULE_START = new Date('2026-04-29T22:00:00Z'); // 2 days before May 1 local
+const RRULE_END   = new Date('2026-06-02T02:00:00Z'); // 2 days after May 31 local
 
 /**
  * Safely convert any node-ical date value to a plain JS Date (UTC-based).
@@ -89,9 +90,15 @@ function categorize(title = '') {
 }
 
 /**
- * Build a serialisable event object from a resolved local start date.
+ * Build a serialisable event object.
+ *
+ * utcStart  – corrected UTC used for time display (timeStr, startIso, _ts)
+ * dateRef   – raw rrule occurrence used for date grouping (dateKey, dayNum)
+ *             falls back to utcStart for one-off events
  */
-function buildEvent(item, utcStart, utcEnd, uid) {
+function buildEvent(item, utcStart, utcEnd, uid, dateRef) {
+  const ref = dateRef || utcStart;
+
   // Use formatInTimeZone for all formatting — immune to Docker/system timezone
   const isAllDay = detectAllDay(item.start);
   let timeStr = '';
@@ -100,7 +107,7 @@ function buildEvent(item, utcStart, utcEnd, uid) {
     if (utcEnd) timeStr += ' – ' + formatInTimeZone(utcEnd, DEFAULT_TZ, 'HH:mm');
   }
 
-  const localStart = toLocal(utcStart); // only used for dateKey / dayNum
+  const localRef = toLocal(ref);
   const title       = (item.summary  || 'Sans titre').trim();
   const description = cleanDescription(item.description);
   const location    = (item.location || '').trim();
@@ -108,8 +115,8 @@ function buildEvent(item, utcStart, utcEnd, uid) {
 
   return {
     id:          uid,
-    dateKey:     formatInTimeZone(utcStart, DEFAULT_TZ, 'yyyy-MM-dd'),
-    dayNum:      getDate(localStart),
+    dateKey:     formatInTimeZone(ref, DEFAULT_TZ, 'yyyy-MM-dd'),
+    dayNum:      getDate(localRef),
     title,
     description,
     location,
@@ -119,7 +126,7 @@ function buildEvent(item, utcStart, utcEnd, uid) {
     color,
     startIso:    utcStart.toISOString(),
     endIso:      utcEnd ? utcEnd.toISOString() : null,
-    // Keep numeric timestamp for sorting (stripped before final return)
+    // Keep numeric timestamp for chronological sorting (stripped before final return)
     _ts:         utcStart.getTime(),
   };
 }
@@ -127,6 +134,13 @@ function buildEvent(item, utcStart, utcEnd, uid) {
 /**
  * Parse an ICS buffer and return events grouped by day for May 2026.
  * Handles both one-off events and recurring events (RRULE).
+ *
+ * node-ical bug: rrule.between() applies a double timezone conversion, returning
+ * occurrences shifted by -1×timezone_offset. This matters in two ways:
+ *   1. TIME is shifted (e.g. 03:00 → 02:00) → fix by adding offset to get corrected UTC
+ *   2. DATE may shift for midnight-crossing events (e.g. Mon 00:00 Lagos appears as
+ *      Sun 22:00Z raw → Mon 23:00Z corrected = Tue 00:00 Porto-Novo if correction applied
+ *      to dateKey too) → fix by using the RAW occurrence for dateKey only
  *
  * @param {Buffer} buffer
  * @returns {{ byDay: Object, allEvents: Array, meta: Object }}
@@ -142,29 +156,29 @@ function parseIcsBuffer(buffer) {
     const utcStart = toUtcDate(item.start);
     if (!utcStart) continue;
 
-    const utcEnd      = toUtcDate(item.end);
+    const utcEnd     = toUtcDate(item.end);
     // Duration in ms, used to compute end time of recurrences
-    const durationMs  = utcEnd ? differenceInMilliseconds(utcEnd, utcStart) : 0;
+    const durationMs = utcEnd ? differenceInMilliseconds(utcEnd, utcStart) : 0;
 
     if (item.rrule) {
       // ── Recurring event: expand all occurrences within May 2026 ──────────
-      // node-ical stores DTSTART as correct UTC in item.start, but the rrule
-      // object internally treats it as local time and re-converts to UTC when
-      // expanding, causing a double-offset shift. Correct by re-adding the
-      // event timezone offset to each returned occurrence.
-      const eventTz   = (item.start && item.start.tz) ? item.start.tz : null;
-      const occurrences = item.rrule.between(MAY_START_UTC, MAY_END_UTC, true);
+      const eventTz     = (item.start && item.start.tz) ? item.start.tz : null;
+      const occurrences = item.rrule.between(RRULE_START, RRULE_END, true);
 
       occurrences.forEach((occRaw, i) => {
+        // occRaw: use AS-IS for dateKey (the raw rrule output already maps to
+        // the correct Porto-Novo local date when formatted with formatInTimeZone)
+        const localOcc = toLocal(occRaw);
+        if (!isInMay(localOcc)) return;
+
+        // occUtc: timezone-corrected date used for time display and startIso
+        // (adds back the offset that rrule incorrectly subtracted)
         const occUtc = eventTz
           ? new Date(occRaw.getTime() + getTimezoneOffset(eventTz, occRaw))
           : occRaw;
 
-        const localOcc = toLocal(occUtc);
-        if (!isInMay(localOcc)) return;
-
         const occEnd = durationMs > 0 ? new Date(occUtc.getTime() + durationMs) : null;
-        events.push(buildEvent(item, occUtc, occEnd, `${key}_occ${i}`));
+        events.push(buildEvent(item, occUtc, occEnd, `${key}_occ${i}`, occRaw));
       });
     } else {
       // ── One-off event ─────────────────────────────────────────────────────
@@ -175,8 +189,13 @@ function parseIcsBuffer(buffer) {
     }
   }
 
-  // Sort chronologically
-  events.sort((a, b) => a._ts - b._ts);
+  // Sort chronologically by Porto-Novo local date + time
+  // (using dateKey + timeStr avoids UTC-to-local day-boundary issues)
+  events.sort((a, b) => {
+    const aKey = a.dateKey + (a.timeStr || '');
+    const bKey = b.dateKey + (b.timeStr || '');
+    return aKey < bKey ? -1 : aKey > bKey ? 1 : 0;
+  });
 
   // Group by day
   const byDay = {};
