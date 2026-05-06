@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+# Install Chromium once — cached in image layer, not re-run at each start
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto
+
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+WORKDIR /app
+
+# Pre-install dependencies so first startup is fast
+COPY backend/package*.json ./
+RUN npm install
+
+EXPOSE 3001
